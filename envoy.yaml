@@ -63,6 +63,9 @@ static_resources:
           - name: envoy.filters.http.ext_authz
             typed_config:
               "@type": type.googleapis.com/envoy.config.filter.http.ext_authz.v2.ExtAuthz
+              with_request_body:
+                max_request_bytes: 1024
+                allow_partial_message: true
               grpc_service:
                 envoy_grpc:
                   cluster_name: custom-plugin

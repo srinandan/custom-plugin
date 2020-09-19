@@ -14,17 +14,15 @@
 
 package main
 
-// inspired by https://github.com/salrashid123/envoy_external_authz/blob/master/authz_server/grpc_server.go
-
 import (
 	"log"
 	"net"
 	"os"
 	"os/signal"
 
+	extauthz "github.com/srinandan/custom-plugin/server/extauthz"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
-	extauthz "github.com/srinandan/custom-plugin/server/extauthz"
 )
 
 func getGRPCPort() string {
