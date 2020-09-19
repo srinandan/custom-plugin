@@ -3,20 +3,27 @@
 
 This sample implements Envoy's (external authorization)[https://www.envoyproxy.io/docs/envoy/latest/api-v2/config/filter/http/ext_authz/v2/ext_authz.proto] filter
 
-## Testing localling
+## Testing locally
+
+These steps work on Linux/Debian machines
+
+Step 1: Run ext-authz server
 
 ```bash
-./build-docker.sh
+go run ./server/main.go
 ```
+
+Step 2: Run envoy
 
 ```bash
-curl -v http://localhost:8080/httpbin
+envoy -c envoy.yaml
 ```
+
+Step 3: Test endpoint
 
 ```bash
-./clean-docker.sh
+curl localhost:8080/httpbin/get -v
 ```
-
 ___
 
 ## Support
