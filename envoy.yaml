@@ -32,13 +32,13 @@ static_resources:
     - filters:
       - name: envoy.http_connection_manager
         typed_config:
-          "@type": type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
+          "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
           stat_prefix: apigee-gateway
           codec_type: AUTO
           route_config:
             name: local_route
             virtual_hosts:
-            - name: local_service
+            - name: apigee-gateway
               domains: ["*"]
               routes:
               - match:
@@ -46,23 +46,20 @@ static_resources:
                 route:
                   prefix_rewrite: "/"
                   cluster: httpbin-service
-                #per_filter_config:
-                #  envoy.filters.http.dynamic_forward_proxy:
-                #    host_rewrite: "httpbin.org"
+
           http_filters:
-          #- name: envoy.filters.http.dynamic_forward_proxy
-          #  config:
-          #    dns_cache_config:
-          #      name: dynamic_forward_proxy_cache_config
-          #      dns_lookup_family: "V4_ONLY"
+
           - name: envoy.filters.http.ext_authz
-            config:
+            typed_config:
+              "@type": type.googleapis.com/envoy.config.filter.http.ext_authz.v2.ExtAuthz
               grpc_service:
                 envoy_grpc:
                   cluster_name: custom-plugin
                 timeout: 1s
+
           - name: envoy.filters.http.router
-            typed_config: {}
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
 
   clusters:
   - name: mocktarget-service
@@ -82,7 +79,7 @@ static_resources:
     transport_socket:
       name: envoy.transport_sockets.tls
       typed_config:
-        "@type": type.googleapis.com/envoy.api.v2.auth.UpstreamTlsContext
+        "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
         sni: mocktarget.apigee.net
 
   - name: httpbin-service
@@ -102,15 +99,13 @@ static_resources:
     transport_socket:
       name: envoy.transport_sockets.tls
       typed_config:
-        "@type": type.googleapis.com/envoy.api.v2.auth.UpstreamTlsContext
+        "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
         sni: httpbin.org
 
   - name: custom-plugin
-    type: STRICT_DNS
+    type: static
     http2_protocol_options: {}
-    dns_lookup_family: V4_ONLY
     connect_timeout: 0.25s
-    lb_policy: ROUND_ROBIN
     load_assignment:
       cluster_name: custom-plugin
       endpoints:
@@ -118,9 +113,16 @@ static_resources:
         - endpoint:
             address:
               socket_address:
-                # needed for MacOS with docker
-                # address: host.docker.internal
-                # run docker run with --network="host" for 127.0.0.1 on linux
-                # address: 127.0.0.1
-                address: localhost
-                port_value: 50051
+                address: 127.0.0.1
+                port_value: 5000
+    common_lb_config:
+      healthy_panic_threshold:
+        value: 50.0
+    health_checks:
+      - timeout: 1s
+        interval: 5s
+        interval_jitter: 1s
+        no_traffic_interval: 5s
+        unhealthy_threshold: 1
+        healthy_threshold: 3
+        grpc_health_check: {}

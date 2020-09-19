@@ -26,7 +26,7 @@ import (
 func getGRPCPort() string {
 	port := os.Getenv("GRPC_PORT")
 	if port == "" {
-		return "0.0.0.0:50051"
+		return ":5000"
 	}
 	return port
 }
