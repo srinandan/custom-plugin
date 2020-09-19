@@ -46,8 +46,19 @@ static_resources:
                 route:
                   prefix_rewrite: "/"
                   cluster: httpbin-service
+                typed_per_filter_config:
+                  envoy.filters.http.dynamic_forward_proxy:
+                    "@type": type.googleapis.com/envoy.extensions.filters.http.dynamic_forward_proxy.v3.PerRouteConfig
+                    host_rewrite_literal: mocktarget.apigee.net
 
           http_filters:
+
+          - name: envoy.filters.http.dynamic_forward_proxy
+            typed_config:
+              "@type": type.googleapis.com/envoy.config.filter.http.dynamic_forward_proxy.v2alpha.FilterConfig
+              dns_cache_config:
+                name: dynamic_forward_proxy_cache_config
+                dns_lookup_family: V4_ONLY
 
           - name: envoy.filters.http.ext_authz
             typed_config:
@@ -63,24 +74,22 @@ static_resources:
 
   clusters:
   - name: mocktarget-service
-    connect_timeout: 2s
-    type: LOGICAL_DNS
-    dns_lookup_family: V4_ONLY
-    lb_policy: ROUND_ROBIN
-    load_assignment:
-      cluster_name: mocktarget-service
-      endpoints:
-      - lb_endpoints:
-        - endpoint:
-            address:
-              socket_address:
-                address: mocktarget.apigee.net
-                port_value: 443
+    connect_timeout: 1s
+    lb_policy: CLUSTER_PROVIDED
+    cluster_type:
+      name: envoy.clusters.dynamic_forward_proxy
+      typed_config:
+        "@type": type.googleapis.com/envoy.extensions.clusters.dynamic_forward_proxy.v3.ClusterConfig
+        dns_cache_config:
+          name: dynamic_forward_proxy_cache_config
+          dns_lookup_family: V4_ONLY
     transport_socket:
       name: envoy.transport_sockets.tls
       typed_config:
         "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
-        sni: mocktarget.apigee.net
+        common_tls_context:
+          validation_context:
+            trusted_ca: {filename: /etc/ssl/certs/ca-certificates.crt}
 
   - name: httpbin-service
     connect_timeout: 2s

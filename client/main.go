@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"os"
 
-	auth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
+	auth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v2"
 	"google.golang.org/grpc"
 )
 
