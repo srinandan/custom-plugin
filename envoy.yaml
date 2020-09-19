@@ -1,6 +1,20 @@
+# Copyright 2020 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 # set up admin port tp 8000
 admin:
-  access_log_path: /tmp/admin_access.log
+  access_log_path: /dev/stdout
   address:
     socket_address:
       address: 0.0.0.0
@@ -36,11 +50,11 @@ static_resources:
                 #  envoy.filters.http.dynamic_forward_proxy:
                 #    host_rewrite: "httpbin.org"
           http_filters:
-          - name: envoy.filters.http.dynamic_forward_proxy
-            config:
-              dns_cache_config:
-                name: dynamic_forward_proxy_cache_config
-                dns_lookup_family: "V4_ONLY"
+          #- name: envoy.filters.http.dynamic_forward_proxy
+          #  config:
+          #    dns_cache_config:
+          #      name: dynamic_forward_proxy_cache_config
+          #      dns_lookup_family: "V4_ONLY"
           - name: envoy.filters.http.ext_authz
             config:
               grpc_service:
@@ -69,7 +83,8 @@ static_resources:
       name: envoy.transport_sockets.tls
       typed_config:
         "@type": type.googleapis.com/envoy.api.v2.auth.UpstreamTlsContext
-        sni: httpbin.org    
+        sni: mocktarget.apigee.net
+
   - name: httpbin-service
     connect_timeout: 2s
     type: LOGICAL_DNS
@@ -89,10 +104,12 @@ static_resources:
       typed_config:
         "@type": type.googleapis.com/envoy.api.v2.auth.UpstreamTlsContext
         sni: httpbin.org
+
   - name: custom-plugin
     type: STRICT_DNS
     http2_protocol_options: {}
     dns_lookup_family: V4_ONLY
+    connect_timeout: 0.25s
     lb_policy: ROUND_ROBIN
     load_assignment:
       cluster_name: custom-plugin
@@ -101,19 +118,9 @@ static_resources:
         - endpoint:
             address:
               socket_address:
+                # needed for MacOS with docker
+                # address: host.docker.internal
+                # run docker run with --network="host" for 127.0.0.1 on linux
+                # address: 127.0.0.1
                 address: localhost
                 port_value: 50051
-    common_lb_config:
-      healthy_panic_threshold:
-        value: 50.0
-    health_checks:
-      - timeout: 1s
-        interval: 5s
-        interval_jitter: 1s
-        no_traffic_interval: 5s
-        unhealthy_threshold: 1
-        healthy_threshold: 3
-        grpc_health_check:
-          service_name: "envoy.service.auth.v2alpha.Authorization"
-          authority: "server.domain.com"
-    connect_timeout: 0.25s
