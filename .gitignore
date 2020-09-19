@@ -4,7 +4,7 @@
 *.dll
 *.so
 *.dylib
-
+envoy
 .DS_Store
 
 # Test binary, built with `go test -c`
@@ -15,10 +15,9 @@
 
 # test files
 *.json
-*.zip 
+*.zip
 
 # Dependency directories (remove the comment below to include it)
 vendor/
 # binaries
 dist/
-

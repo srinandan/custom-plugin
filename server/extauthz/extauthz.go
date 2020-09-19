@@ -6,7 +6,7 @@ import (
 
   "golang.org/x/net/context"
   "google.golang.org/grpc"
-  //"google.golang.org/protobuf/types/known/wrapperspb"
+  "google.golang.org/protobuf/types/known/wrapperspb"
 
   "google.golang.org/grpc/codes"
   healthpb "google.golang.org/grpc/health/grpc_health_v1"
@@ -14,8 +14,9 @@ import (
 
   rpcstatus "google.golang.org/genproto/googleapis/rpc/status"
 
-  core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-  auth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
+  //corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+  corev2 "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+  auth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v2"
   "github.com/gogo/googleapis/google/rpc"
 )
 
@@ -59,32 +60,30 @@ func (a *AuthorizationServer) Check(ctx context.Context, req *auth.CheckRequest)
 		}
 	}
 
-	return &auth.CheckResponse{
-		Status: &rpcstatus.Status{
-			Code: int32(rpc.OK),
-		},
-		HttpResponse: &auth.CheckResponse_OkResponse{
-			OkResponse: &auth.OkHttpResponse{
-				Headers: []*core.HeaderValueOption{
-					{
-						Header: &core.HeaderValue{
-							Key:   "x-custom-header-from-authz",
-							Value: "some value",
-						},
-					},
-					/*{
-						Header: &core.HeaderValue{
-							Key:   "host",
-							Value: "mocktarget.apigee.net",
-						},
-						// Note that
-						// by Leaving `append` as false, the filter will either add a new header, or override an existing
-						// one if there is a match.
-						//Append: &wrapperspb.BoolValue{Value: false},
-					},*/
-				},
-			},
-		},
-	}, nil
+  return &auth.CheckResponse{
+    Status: &rpcstatus.Status{
+      Code: int32(rpc.OK),
+    },
+    HttpResponse: &auth.CheckResponse_OkResponse{
+      OkResponse: &auth.OkHttpResponse{
+        Headers: []*corev2.HeaderValueOption{
+          setHeader("x-custom-header","ext-authz", false),
+          setHeader("host", "mocktarget.apigee.net", false),
+          setHeader(":path", "/", false),
+        },
+      },
+    },
+  }, nil
+}
 
+func setHeader(name string, value string, append bool) (*corev2.HeaderValueOption) {
+  header := &corev2.HeaderValue{
+    Key: name,
+    Value: value,
+  }
+
+  return &corev2.HeaderValueOption{
+    Header: header,
+    Append: &wrapperspb.BoolValue{Value: append},
+  }
 }
