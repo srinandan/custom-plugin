@@ -8,10 +8,6 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	"google.golang.org/grpc/codes"
-	healthpb "google.golang.org/grpc/health/grpc_health_v1"
-	"google.golang.org/grpc/status"
-
 	rpcstatus "google.golang.org/genproto/googleapis/rpc/status"
 
 	corev2 "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
@@ -20,16 +16,6 @@ import (
 )
 
 // inspired by https://github.com/salrashid123/envoy_external_authz/blob/master/authz_server/grpc_server.go
-
-type healthServer struct{}
-
-func (s *healthServer) Check(ctx context.Context, in *healthpb.HealthCheckRequest) (*healthpb.HealthCheckResponse, error) {
-	return &healthpb.HealthCheckResponse{Status: healthpb.HealthCheckResponse_SERVING}, nil
-}
-
-func (s *healthServer) Watch(in *healthpb.HealthCheckRequest, srv healthpb.Health_WatchServer) error {
-	return status.Error(codes.Unimplemented, "Watch is not implemented")
-}
 
 // Register registers
 func (a *AuthorizationServer) Register(s *grpc.Server) {
@@ -41,6 +27,8 @@ type AuthorizationServer struct{}
 
 func (a *AuthorizationServer) Check(ctx context.Context, req *auth.CheckRequest) (*auth.CheckResponse, error) {
 	log.Println(">>> Authorization called check()")
+	backend := "default"
+	basePath := "/"
 
 	if req.Attributes != nil &&
 		req.Attributes.Request != nil &&
@@ -49,6 +37,17 @@ func (a *AuthorizationServer) Check(ctx context.Context, req *auth.CheckRequest)
 		if b, err := json.MarshalIndent(req.Attributes.Request.Http.Headers, "", "  "); err == nil {
 			log.Println("Inbound Headers: ")
 			log.Println((string(b)))
+			switch backend = req.Attributes.Request.Http.Headers["x-backend-url"]; backend {
+			case "mocktarget":
+				backend = "mocktarget.apigee.net"
+				basePath = "/iloveapis"
+			case "postman":
+				backend = "postman-echo.com"
+				basePath = "/postman"
+			default:
+				backend = "default"
+				basePath = "/"
+			}
 		}
 	}
 
@@ -57,7 +56,7 @@ func (a *AuthorizationServer) Check(ctx context.Context, req *auth.CheckRequest)
 		req.Attributes.Request.Http != nil &&
 		req.Attributes.Request.Http.Body != "" {
 
-			log.Println("Payload >> ", req.Attributes.Request.Http.Body)
+		log.Println("Payload >> ", req.Attributes.Request.Http.Body)
 	}
 
 	if req.Attributes != nil && req.Attributes.ContextExtensions != nil {
@@ -67,20 +66,37 @@ func (a *AuthorizationServer) Check(ctx context.Context, req *auth.CheckRequest)
 		}
 	}
 
-	return &auth.CheckResponse{
-		Status: &rpcstatus.Status{
-			Code: int32(rpc.OK),
-		},
-		HttpResponse: &auth.CheckResponse_OkResponse{
-			OkResponse: &auth.OkHttpResponse{
-				Headers: []*corev2.HeaderValueOption{
-					setHeader("x-custom-header", "ext-authz", false),
-					setHeader("host", "mocktarget.apigee.net", false),
-					setHeader(":path", "/", false),
+	return checkResponse(backend, basePath), nil
+}
+
+func checkResponse(backend string, basePath string) (*auth.CheckResponse) {
+	log.Println(">>> Authorization CheckResponse_OkResponse")
+	log.Println("Selecting route ", backend)
+
+	if backend == "default" {
+		return &auth.CheckResponse{
+			Status: &rpcstatus.Status{
+				Code: int32(rpc.OK),
+			},
+			HttpResponse: &auth.CheckResponse_OkResponse{
+				OkResponse: &auth.OkHttpResponse{},
+			},
+		}
+	} else {
+		return &auth.CheckResponse{
+			Status: &rpcstatus.Status{
+				Code: int32(rpc.OK),
+			},
+			HttpResponse: &auth.CheckResponse_OkResponse{
+				OkResponse: &auth.OkHttpResponse{
+					Headers: []*corev2.HeaderValueOption{
+						setHeader("host", backend, false),
+						setHeader(":path", basePath, false),
+					},
 				},
 			},
-		},
-	}, nil
+		}
+	}
 }
 
 func setHeader(name string, value string, append bool) *corev2.HeaderValueOption {

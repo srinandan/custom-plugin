@@ -19,10 +19,14 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"syscall"
+	"time"
 
 	extauthz "github.com/srinandan/custom-plugin/server/extauthz"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/health"
+	"google.golang.org/grpc/health/grpc_health_v1"
+	"google.golang.org/grpc/keepalive"
 )
 
 func getGRPCPort() string {
@@ -34,39 +38,54 @@ func getGRPCPort() string {
 }
 
 func main() {
+	serve()
+	select {}
+}
 
-	ctx := context.Background()
-
-	listen, err := net.Listen("tcp", getGRPCPort())
-	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
+func serve() {
+	// gRPC server
+	opts := []grpc.ServerOption{
+		grpc.KeepaliveParams(keepalive.ServerParameters{
+			MaxConnectionAge: 10 * time.Minute,
+		}),
+		grpc.MaxConcurrentStreams(10),
 	}
-
-	opts := []grpc.ServerOption{grpc.MaxConcurrentStreams(10)}
 
 	grpcServer := grpc.NewServer(opts...)
 
 	as := &extauthz.AuthorizationServer{}
 	as.Register(grpcServer)
 
-	//healthpb.RegisterHealthServer(server, &healthServer{})
+	// grpc health
+	grpcHealth := health.NewServer()
+	grpc_health_v1.RegisterHealthServer(grpcServer, grpcHealth)
 
 	log.Printf("starting gRPC Server at %s", getGRPCPort())
 
-	// graceful shutdown
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt)
+	// grpc listener
+	grpcListener, err := net.Listen("tcp", getGRPCPort())
+	if err != nil {
+		panic(err)
+	}
+
 	go func() {
-		for range c {
-			// sig is a ^C, handle it
-			log.Printf("shutting down gRPC server...")
-
-			grpcServer.GracefulStop()
-
-			<-ctx.Done()
+		if err := grpcServer.Serve(grpcListener); err != nil {
+			log.Printf("%s", err)
 		}
 	}()
 
-	_ = grpcServer.Serve(listen)
+	// watch for termination signals
+	go func() {
+		sigint := make(chan os.Signal, 1)
+		signal.Notify(sigint, os.Interrupt)    // terminal
+		signal.Notify(sigint, syscall.SIGTERM) // kubernetes
+		sig := <-sigint
+		log.Printf("shutdown signal: %s", sig)
+		signal.Stop(sigint)
 
+		grpcServer.GracefulStop()
+
+		log.Println("shutdown complete")
+		os.Exit(0)
+	}()
 }

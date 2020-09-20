@@ -42,14 +42,23 @@ static_resources:
               domains: ["*"]
               routes:
               - match:
+                  prefix: "/iloveapis"
+                route:
+                  cluster: mocktarget-service
+              - match:
                   prefix: "/httpbin"
                 route:
                   prefix_rewrite: "/"
                   cluster: httpbin-service
+              - match:
+                  prefix: "/postman"
+                route:
+                  prefix_rewrite: "/get"
+                  cluster: postman-service
                 typed_per_filter_config:
                   envoy.filters.http.dynamic_forward_proxy:
                     "@type": type.googleapis.com/envoy.extensions.filters.http.dynamic_forward_proxy.v3.PerRouteConfig
-                    host_rewrite_literal: mocktarget.apigee.net
+                    host_rewrite_literal: postman-echo.com
 
           http_filters:
 
@@ -66,6 +75,7 @@ static_resources:
               with_request_body:
                 max_request_bytes: 1024
                 allow_partial_message: true
+              clear_route_cache: true
               grpc_service:
                 envoy_grpc:
                   cluster_name: custom-plugin
@@ -76,7 +86,7 @@ static_resources:
               "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
 
   clusters:
-  - name: mocktarget-service
+  - name: postman-service
     connect_timeout: 1s
     lb_policy: CLUSTER_PROVIDED
     cluster_type:
@@ -93,6 +103,26 @@ static_resources:
         common_tls_context:
           validation_context:
             trusted_ca: {filename: /etc/ssl/certs/ca-certificates.crt}
+
+  - name: mocktarget-service
+    connect_timeout: 2s
+    type: LOGICAL_DNS
+    dns_lookup_family: V4_ONLY
+    lb_policy: ROUND_ROBIN
+    load_assignment:
+      cluster_name: mocktarget-service
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: mocktarget.apigee.net
+                port_value: 443
+    transport_socket:
+      name: envoy.transport_sockets.tls
+      typed_config:
+        "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+        sni: mocktarget.apigee.net
 
   - name: httpbin-service
     connect_timeout: 2s
