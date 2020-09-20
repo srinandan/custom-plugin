@@ -1,7 +1,6 @@
-
 # custom-plugin
 
-This sample implements Envoy's (external authorization)[https://www.envoyproxy.io/docs/envoy/latest/api-v2/config/filter/http/ext_authz/v2/ext_authz.proto] filter
+This sample implements Envoy's (external authorization)[https://www.envoyproxy.io/docs/envoy/latest/api-v2/config/filter/http/ext_authz/v2/ext_authz.proto] filter to demonstrate simple routing of requests to upstream targets
 
 ## Testing locally
 
@@ -21,19 +20,42 @@ envoy -c envoy.yaml
 
 Step 3: Test endpoint(s)
 
-Pass no backend header
+Pass no backend header to send to [https://httpbin.org](https://httpbin.org)
+
 ```bash
 curl localhost:8080/httpbin/get -v
+
+{
+  "args": {},
+  "headers": {
+    "Accept": "*/*",
+    "Content-Length": "0",
+    "Host": "localhost",
+    "User-Agent": "curl/7.72.0",
+    "X-Amzn-Trace-Id": "Root=1-5f66d5bd-b781a4b0bc327988a65b5308",
+    "X-Backend-Url": "default",
+    "X-Envoy-Expected-Rq-Timeout-Ms": "15000",
+    "X-Envoy-Original-Path": "/httpbin/get"
+  },
+  "origin": "xxxxx",
+  "url": "https://localhost/get"
+}
 ```
 
-Pass mocktarget header
+Pass mocktarget header to send to [https://mocktarget.apigee.net](https://mocktarget.apigee.net)
+
 ```bash
 curl localhost:8080/httpbin/get -v -H "x-backend-url: mocktarget"
+
+<H2>I <3 APIs</H2>
 ```
 
-Pass postman header
+Pass postman header to send to [https://postman-echo.com](https://postman-echo.com)
+
 ```bash
 curl localhost:8080/httpbin/get -v -H "x-backend-url: postman"
+
+{"args":{},"headers":{"x-forwarded-proto":"https","x-forwarded-port":"443","host":"postman-echo.com","x-amzn-trace-id":"Root=1-5f66d571-fa7aef58f8499f30a449a694","content-length":"0","user-agent":"curl/7.72.0","accept":"*/*","x-backend-url":"postman","x-request-id":"df845e9a-62ce-403c-ade4-1fcc9352a858","x-envoy-expected-rq-timeout-ms":"15000","x-envoy-original-path":"/postman"},"url":"https://postman-echo.com/get"}
 ```
 ___
 
