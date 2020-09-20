@@ -40,7 +40,7 @@ func getGRPCPort() string {
 
 func main() {
 	if err := routes.ReadRoutesFile(); err != nil {
-		log.Printf("unable to load routing table.")
+		log.Printf("unable to load routing table: %s", err)
 		os.Exit(1)
 	}
 	serve()
