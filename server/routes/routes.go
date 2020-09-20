@@ -14,6 +14,10 @@
 
 package routes
 
+import (
+	"encoding/json"
+	"io/ioutil"
+)
 
 type routerule struct {
   Name     string `json:"name,omitempty"`
@@ -21,7 +25,11 @@ type routerule struct {
   BasePath string `json:"basePath,omitempty"`
 }
 
-var routerules []routerule{}
+var routerules = []routerule{}
+var defaultRouterule = routerule{
+	Backend: "httpbin.org",
+	BasePath: "/",
+}
 
 func ReadRoutesFile() error {
 	routeListBytes, err := ioutil.ReadFile("routes.json")
@@ -33,6 +41,13 @@ func ReadRoutesFile() error {
 		return err
 	}
 
+	for _, routerule := range routerules {
+		if routerule.Name == "default" {
+			defaultRouterule.BasePath = routerule.BasePath
+			defaultRouterule.Backend = routerule.Backend
+		}
+	}
+
 	return nil
 }
 
@@ -40,11 +55,15 @@ func ListRouteRules() []routerule {
   return routerules
 }
 
+func GetDefaultRouteRule() (string, string) {
+	return defaultRouterule.Backend, defaultRouterule.BasePath
+}
+
 func GetRouteRule(name string) (string, string) {
   for _, routerule := range routerules {
-		if routerule.Name == Name {
+		if routerule.Name == name {
 			return routerule.Backend, routerule.BasePath
 		}
 	}
-  return "default", "/"
+  return GetDefaultRouteRule()
 }

@@ -14,7 +14,7 @@ import (
 	corev2 "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	auth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v2"
 	"github.com/gogo/googleapis/google/rpc"
-	"github.com/srinandan/custom-plugin/routes"
+	"github.com/srinandan/custom-plugin/server/routes"
 )
 
 // inspired by https://github.com/salrashid123/envoy_external_authz/blob/master/authz_server/grpc_server.go
@@ -27,10 +27,11 @@ func (a *AuthorizationServer) Register(s *grpc.Server) {
 // AuthorizationServer server
 type AuthorizationServer struct{}
 
+const routeHeader = "x-backend-name"
+
 func (a *AuthorizationServer) Check(ctx context.Context, req *auth.CheckRequest) (*auth.CheckResponse, error) {
 	log.Println(">>> Authorization called check()")
-	backend := "default"
-	basePath := "/"
+	backend, basePath := routes.GetDefaultRouteRule()
 
 	if req.Attributes != nil &&
 		req.Attributes.Request != nil &&
@@ -39,7 +40,7 @@ func (a *AuthorizationServer) Check(ctx context.Context, req *auth.CheckRequest)
 		if b, err := json.MarshalIndent(req.Attributes.Request.Http.Headers, "", "  "); err == nil {
 			log.Println("Inbound Headers: ")
 			log.Println((string(b)))
-			backend, basePath = routes.GetRouteRule(req.Attributes.Request.Http.Headers["x-backend-name"])
+			backend, basePath = routes.GetRouteRule(req.Attributes.Request.Http.Headers[routeHeader])
 		}
 	}
 
@@ -65,7 +66,7 @@ func (a *AuthorizationServer) Check(ctx context.Context, req *auth.CheckRequest)
 		}
 	}
 	//skip filter
-	return checkResponse("default", "/"), nil
+	return checkResponse(backend, basePath), nil
 }
 
 func checkDenyResponse() (*auth.CheckResponse) {

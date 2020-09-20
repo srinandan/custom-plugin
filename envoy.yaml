@@ -41,10 +41,15 @@ static_resources:
             - name: apigee-gateway
               domains: ["*"]
               routes:
+                # this is the only route accessible directly
+                # pass x-backend-name to route to different
+                # upstream clusters
               - match:
                   prefix: "/route"
                 route:
                   cluster: httpbin-service
+                # although these routes are not accessible directly,
+                # they need to be defined in envoy's configuration
               - match:
                   prefix: "/iloveapis"
                 route:
@@ -54,6 +59,8 @@ static_resources:
                 route:
                   prefix_rewrite: "/"
                   cluster: httpbin-service
+                # this route returns unhealthy upstream. needs investigation.
+                # for the first time, pass "host" header
               - match:
                   prefix: "/postman"
                 route:

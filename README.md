@@ -23,7 +23,7 @@ Step 3: Test endpoint(s)
 Pass no backend header to send to [https://httpbin.org](https://httpbin.org)
 
 ```bash
-curl localhost:8080/httpbin/get -v
+curl localhost:8080/route -v
 
 {
   "args": {},
@@ -45,7 +45,7 @@ curl localhost:8080/httpbin/get -v
 Pass mocktarget header to send to [https://mocktarget.apigee.net](https://mocktarget.apigee.net)
 
 ```bash
-curl localhost:8080/httpbin/get -v -H "x-backend-url: mocktarget"
+curl localhost:8080/route -v -H "x-backend-name: mocktarget"
 
 <H2>I <3 APIs</H2>
 ```
@@ -53,7 +53,7 @@ curl localhost:8080/httpbin/get -v -H "x-backend-url: mocktarget"
 Pass postman header to send to [https://postman-echo.com](https://postman-echo.com)
 
 ```bash
-curl localhost:8080/httpbin/get -v -H "x-backend-url: postman"
+curl localhost:8080/route -v -H "x-backend-name: postman"
 
 {"args":{},"headers":{"x-forwarded-proto":"https","x-forwarded-port":"443","host":"postman-echo.com","x-amzn-trace-id":"Root=1-5f66d571-fa7aef58f8499f30a449a694","content-length":"0","user-agent":"curl/7.72.0","accept":"*/*","x-backend-url":"postman","x-request-id":"df845e9a-62ce-403c-ade4-1fcc9352a858","x-envoy-expected-rq-timeout-ms":"15000","x-envoy-original-path":"/postman"},"url":"https://postman-echo.com/get"}
 ```
