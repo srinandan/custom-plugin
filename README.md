@@ -2,6 +2,14 @@
 
 This sample implements Envoy's (external authorization)[https://www.envoyproxy.io/docs/envoy/latest/api-v2/config/filter/http/ext_authz/v2/ext_authz.proto] filter to demonstrate simple routing of requests to upstream targets
 
+## Testing via docker
+
+Step 1: Build the docker image
+
+```bash
+./build-docker.sh
+```
+
 ## Testing locally
 
 These steps work on Linux/Debian machines
@@ -18,7 +26,7 @@ Step 2: Run envoy
 envoy -c envoy.yaml
 ```
 
-Step 3: Test endpoint(s)
+## Test endpoint(s)
 
 Pass no backend header to send to [https://httpbin.org](https://httpbin.org)
 
@@ -56,6 +64,12 @@ Pass postman header to send to [https://postman-echo.com](https://postman-echo.c
 curl localhost:8080/route -v -H "x-backend-name: postman"
 
 {"args":{},"headers":{"x-forwarded-proto":"https","x-forwarded-port":"443","host":"postman-echo.com","x-amzn-trace-id":"Root=1-5f66d571-fa7aef58f8499f30a449a694","content-length":"0","user-agent":"curl/7.72.0","accept":"*/*","x-backend-url":"postman","x-request-id":"df845e9a-62ce-403c-ade4-1fcc9352a858","x-envoy-expected-rq-timeout-ms":"15000","x-envoy-original-path":"/postman"},"url":"https://postman-echo.com/get"}
+```
+
+## Cleanup
+
+```bash
+./clean-docker.sh
 ```
 ___
 
