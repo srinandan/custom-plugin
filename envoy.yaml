@@ -54,11 +54,11 @@ static_resources:
                   prefix: "/postman"
                 route:
                   prefix_rewrite: "/get"
-                  cluster: postman-service
+                  cluster: dynamic-service
                 typed_per_filter_config:
                   envoy.filters.http.dynamic_forward_proxy:
                     "@type": type.googleapis.com/envoy.extensions.filters.http.dynamic_forward_proxy.v3.PerRouteConfig
-                    #host_rewrite_literal: postman-echo.com
+                    host_rewrite_header: host
 
           http_filters:
 
@@ -87,7 +87,7 @@ static_resources:
 
   clusters:
   # NOTE: This only works if you call /postman directly first and cache the route
-  - name: postman-service
+  - name: dynamic-service
     connect_timeout: 1s
     lb_policy: CLUSTER_PROVIDED
     cluster_type:
@@ -124,6 +124,26 @@ static_resources:
       typed_config:
         "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
         sni: mocktarget.apigee.net
+
+  - name: postman-service
+    connect_timeout: 2s
+    type: LOGICAL_DNS
+    dns_lookup_family: V4_ONLY
+    lb_policy: ROUND_ROBIN
+    load_assignment:
+      cluster_name: postman-service
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: postman-echo.com
+                port_value: 443
+    transport_socket:
+      name: envoy.transport_sockets.tls
+      typed_config:
+        "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+        sni: postman-echo.com       
 
   - name: httpbin-service
     connect_timeout: 2s

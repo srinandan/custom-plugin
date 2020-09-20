@@ -3,6 +3,7 @@ package extauthz
 import (
 	"encoding/json"
 	"log"
+	"regexp"
 
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -51,14 +52,6 @@ func (a *AuthorizationServer) Check(ctx context.Context, req *auth.CheckRequest)
 		}
 	}
 
-	if req.Attributes != nil &&
-		req.Attributes.Request != nil &&
-		req.Attributes.Request.Http != nil &&
-		req.Attributes.Request.Http.Body != "" {
-
-		log.Println("Payload >> ", req.Attributes.Request.Http.Body)
-	}
-
 	if req.Attributes != nil && req.Attributes.ContextExtensions != nil {
 		if ct, err := json.MarshalIndent(req.Attributes.ContextExtensions, "", "  "); err == nil {
 			log.Println("Context Extensions: ")
@@ -66,12 +59,25 @@ func (a *AuthorizationServer) Check(ctx context.Context, req *auth.CheckRequest)
 		}
 	}
 
-	return checkResponse(backend, basePath), nil
+	if req.Attributes != nil &&
+		req.Attributes.Request != nil &&
+		req.Attributes.Request.Http != nil {
+
+		if req.Attributes.Request.Http.Body != "" {
+			log.Println("Payload >> ", req.Attributes.Request.Http.Body)
+		}
+
+		if enableExtAuthz(req.Attributes.Request.Http.Path) {
+			return checkResponse(backend, basePath), nil
+		}
+	}
+	//skip filter
+	return checkResponse("default", "/"), nil
 }
 
 func checkResponse(backend string, basePath string) (*auth.CheckResponse) {
-	log.Println(">>> Authorization CheckResponse_OkResponse")
 	log.Println("Selecting route ", backend)
+	log.Println(">>> Authorization CheckResponse_OkResponse")
 
 	if backend == "default" {
 		return &auth.CheckResponse{
@@ -109,4 +115,21 @@ func setHeader(name string, value string, append bool) *corev2.HeaderValueOption
 		Header: header,
 		Append: &wrapperspb.BoolValue{Value: append},
 	}
+}
+
+func checkAllowList() (*regexp.Regexp, error){
+	//this is only one at the moment
+	return regexp.Compile(`/httpbin(/[^/]+)*/?`)
+}
+
+func enableExtAuthz(basePath string) bool {
+	log.Printf("basepath %s", basePath)
+
+	allowPath, err := checkAllowList()
+	if err != nil {
+		return false
+	}
+
+	log.Printf("enable ext_authz: %v\n", allowPath.MatchString(basePath))
+	return allowPath.MatchString(basePath)
 }
