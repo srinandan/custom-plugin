@@ -19,10 +19,21 @@ Step 2: Run envoy
 envoy -c envoy.yaml
 ```
 
-Step 3: Test endpoint
+Step 3: Test endpoint(s)
 
+Pass no backend header
 ```bash
 curl localhost:8080/httpbin/get -v
+```
+
+Pass mocktarget header
+```bash
+curl localhost:8080/httpbin/get -v -H "x-backend-url: mocktarget"
+```
+
+Pass postman header
+```bash
+curl localhost:8080/httpbin/get -v -H "x-backend-url: postman"
 ```
 ___
 
