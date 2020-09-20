@@ -58,7 +58,7 @@ static_resources:
                 typed_per_filter_config:
                   envoy.filters.http.dynamic_forward_proxy:
                     "@type": type.googleapis.com/envoy.extensions.filters.http.dynamic_forward_proxy.v3.PerRouteConfig
-                    host_rewrite_literal: postman-echo.com
+                    #host_rewrite_literal: postman-echo.com
 
           http_filters:
 
@@ -86,6 +86,7 @@ static_resources:
               "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
 
   clusters:
+  # NOTE: This only works if you call /postman directly first and cache the route
   - name: postman-service
     connect_timeout: 1s
     lb_policy: CLUSTER_PROVIDED
