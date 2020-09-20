@@ -16,10 +16,7 @@ FROM golang:1.14 as builder
 
 WORKDIR /go/src/custom-plugin
 
-COPY ./server/main.go .
-COPY ./server/go.mod .
-COPY ./server/go.sum .
-
+COPY ./server .
 
 ENV GO111MODULE=on
 RUN go mod download
@@ -27,12 +24,16 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -a -ldflags '-s -w 
 
 FROM envoyproxy/envoy-alpine:v1.15.0
 
+COPY --from=builder /go/bin/custom-plugin .
+
 COPY envoy.yaml /etc/envoy/envoy.yaml
 RUN chmod 777 /etc/envoy/envoy.yaml
-COPY --from=builder /go/bin/custom-plugin .
+
 COPY startup.sh startup.sh
-RUN chmod +x startup.sh
-RUN chmod 777 startup.sh
+RUN chmod +x startup.sh && chmod 777 startup.sh
+
+COPY ./server/routes.json routes.json
+RUN chmod 777 routes.json
 
 RUN apk add --update \
     curl \
@@ -41,4 +42,4 @@ RUN apk add --update \
 EXPOSE 8000
 EXPOSE 8080
 
-# CMD ["./startup.sh"]
+CMD ["./startup.sh"]
