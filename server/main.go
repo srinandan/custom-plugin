@@ -27,6 +27,7 @@ import (
 	"google.golang.org/grpc/health"
 	"google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/keepalive"
+	"github.com/srinandan/custom-plugin/routes"
 )
 
 func getGRPCPort() string {
@@ -38,6 +39,10 @@ func getGRPCPort() string {
 }
 
 func main() {
+	if err := routes.ReadRoutesFile(); err != nil {
+		fmt.Errorf("unable to load routing table.")
+		os.Exit(1)
+	}
 	serve()
 	select {}
 }

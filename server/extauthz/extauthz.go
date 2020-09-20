@@ -14,6 +14,7 @@ import (
 	corev2 "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	auth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v2"
 	"github.com/gogo/googleapis/google/rpc"
+	"github.com/srinandan/custom-plugin/routes"
 )
 
 // inspired by https://github.com/salrashid123/envoy_external_authz/blob/master/authz_server/grpc_server.go
@@ -38,17 +39,7 @@ func (a *AuthorizationServer) Check(ctx context.Context, req *auth.CheckRequest)
 		if b, err := json.MarshalIndent(req.Attributes.Request.Http.Headers, "", "  "); err == nil {
 			log.Println("Inbound Headers: ")
 			log.Println((string(b)))
-			switch backend = req.Attributes.Request.Http.Headers["x-backend-url"]; backend {
-			case "mocktarget":
-				backend = "mocktarget.apigee.net"
-				basePath = "/iloveapis"
-			case "postman":
-				backend = "postman-echo.com"
-				basePath = "/postman"
-			default:
-				backend = "default"
-				basePath = "/"
-			}
+			backend, basePath = routes.GetRouteRule(req.Attributes.Request.Http.Headers["x-backend-name"])
 		}
 	}
 
@@ -69,10 +60,20 @@ func (a *AuthorizationServer) Check(ctx context.Context, req *auth.CheckRequest)
 
 		if enableExtAuthz(req.Attributes.Request.Http.Path) {
 			return checkResponse(backend, basePath), nil
+		} else {
+			return checkDenyResponse(), nil
 		}
 	}
 	//skip filter
 	return checkResponse("default", "/"), nil
+}
+
+func checkDenyResponse() (*auth.CheckResponse) {
+	return &auth.CheckResponse{
+		Status: &rpcstatus.Status{
+			Code: int32(rpc.PERMISSION_DENIED),
+		},
+	}
 }
 
 func checkResponse(backend string, basePath string) (*auth.CheckResponse) {
@@ -119,7 +120,7 @@ func setHeader(name string, value string, append bool) *corev2.HeaderValueOption
 
 func checkAllowList() (*regexp.Regexp, error){
 	//this is only one at the moment
-	return regexp.Compile(`/httpbin(/[^/]+)*/?`)
+	return regexp.Compile(`/route(/[^/]+)*/?`)
 }
 
 func enableExtAuthz(basePath string) bool {

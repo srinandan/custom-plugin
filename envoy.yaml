@@ -42,6 +42,10 @@ static_resources:
               domains: ["*"]
               routes:
               - match:
+                  prefix: "/route"
+                route:
+                  cluster: httpbin-service
+              - match:
                   prefix: "/iloveapis"
                 route:
                   cluster: mocktarget-service
@@ -143,7 +147,7 @@ static_resources:
       name: envoy.transport_sockets.tls
       typed_config:
         "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
-        sni: postman-echo.com       
+        sni: postman-echo.com
 
   - name: httpbin-service
     connect_timeout: 2s
