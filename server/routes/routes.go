@@ -25,11 +25,23 @@ type routerule struct {
 	BasePath string `json:"basePath,omitempty"`
 }
 
-var routerules = []routerule{}
+type routeinfo struct {
+	AllowList   []string    `json:"allowList,omitempty"`
+	RouteHeader string      `json:"routeHeader,omitempty"`
+	RouteRules  []routerule `json:"routerules,omitempty"`
+}
+
+var routeInfo = routeinfo{}
+
 var defaultRouterule = routerule{
 	Backend:  "httpbin.org",
 	BasePath: "/",
 }
+
+var defaultAllowList []string = []string{"/route"}
+
+// header used for routing
+const defaultRouteHeader = "x-backend-name"
 
 func ReadRoutesFile() error {
 	routeListBytes, err := ioutil.ReadFile("routes.json")
@@ -37,11 +49,11 @@ func ReadRoutesFile() error {
 		return err
 	}
 
-	if err = json.Unmarshal(routeListBytes, &routerules); err != nil {
+	if err = json.Unmarshal(routeListBytes, &routeInfo); err != nil {
 		return err
 	}
 
-	for _, routerule := range routerules {
+	for _, routerule := range routeInfo.RouteRules {
 		if routerule.Name == "default" {
 			defaultRouterule.BasePath = routerule.BasePath
 			defaultRouterule.Backend = routerule.Backend
@@ -52,7 +64,14 @@ func ReadRoutesFile() error {
 }
 
 func ListRouteRules() []routerule {
-	return routerules
+	return routeInfo.RouteRules
+}
+
+func ListAllowedPaths() []string {
+	if len(routeInfo.AllowList) == 0 {
+		return defaultAllowList
+	}
+	return routeInfo.AllowList
 }
 
 func GetDefaultRouteRule() (string, string) {
@@ -60,10 +79,17 @@ func GetDefaultRouteRule() (string, string) {
 }
 
 func GetRouteRule(name string) (string, string) {
-	for _, routerule := range routerules {
+	for _, routerule := range routeInfo.RouteRules {
 		if routerule.Name == name {
 			return routerule.Backend, routerule.BasePath
 		}
 	}
 	return GetDefaultRouteRule()
+}
+
+func GetRouteHeader() string {
+	if routeInfo.RouteHeader == "" {
+		return defaultRouteHeader
+	}
+	return routeInfo.RouteHeader
 }

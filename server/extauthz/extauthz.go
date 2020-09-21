@@ -41,8 +41,7 @@ func (a *AuthorizationServer) Register(s *grpc.Server) {
 // AuthorizationServer server
 type AuthorizationServer struct{}
 
-// header used for routing
-const routeHeader = "x-backend-name"
+const defaultRouteName = "default"
 
 func (a *AuthorizationServer) Check(ctx context.Context, req *auth.CheckRequest) (*auth.CheckResponse, error) {
 	log.Println(">>> Authorization called check()")
@@ -55,7 +54,7 @@ func (a *AuthorizationServer) Check(ctx context.Context, req *auth.CheckRequest)
 		if b, err := json.MarshalIndent(req.Attributes.Request.Http.Headers, "", "  "); err == nil {
 			log.Println("Inbound Headers: ")
 			log.Println((string(b)))
-			backend, basePath = routes.GetRouteRule(req.Attributes.Request.Http.Headers[routeHeader])
+			backend, basePath = routes.GetRouteRule(req.Attributes.Request.Http.Headers[routes.GetRouteHeader()])
 		}
 	}
 
@@ -85,6 +84,7 @@ func (a *AuthorizationServer) Check(ctx context.Context, req *auth.CheckRequest)
 }
 
 func checkDenyResponse() *auth.CheckResponse {
+	log.Println(">>> Authorization CheckResponse_PERMISSION_DENIED")
 	return &auth.CheckResponse{
 		Status: &rpcstatus.Status{
 			Code: int32(rpc.PERMISSION_DENIED),
@@ -96,7 +96,7 @@ func checkResponse(backend string, basePath string) *auth.CheckResponse {
 	log.Println("Selecting route ", backend)
 	log.Println(">>> Authorization CheckResponse_OkResponse")
 
-	if backend == "default" {
+	if backend == defaultRouteName {
 		return &auth.CheckResponse{
 			Status: &rpcstatus.Status{
 				Code: int32(rpc.OK),
@@ -134,19 +134,18 @@ func setHeader(name string, value string, append bool) *corev2.HeaderValueOption
 	}
 }
 
-func checkAllowList() (*regexp.Regexp, error) {
-	//this is only one at the moment
-	return regexp.Compile(`/route(/[^/]+)*/?`)
-}
-
 func enableExtAuthz(basePath string) bool {
 	log.Printf("basepath %s", basePath)
 
-	allowPath, err := checkAllowList()
-	if err != nil {
-		return false
+	allowedPaths := routes.ListAllowedPaths()
+	for _, allowedPath := range allowedPaths {
+		matchStr := "^" + allowedPath + "(/[^/]+)*/?"
+		log.Println(matchStr)
+		if ok, _ := regexp.MatchString(matchStr, basePath); ok {
+			log.Printf("allow basepath")
+			return true
+		}
 	}
-
-	log.Printf("enable ext_authz: %v\n", allowPath.MatchString(basePath))
-	return allowPath.MatchString(basePath)
+	log.Printf("deny basepath")
+	return false
 }

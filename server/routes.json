@@ -1,4 +1,7 @@
-[
+{
+  "allowList": ["/route"],
+  "routeHeader": "x-backend-name",
+  "routerules" : [
     {
       "name": "mocktarget",
       "basePath": "/iloveapis",
@@ -19,5 +22,5 @@
       "basePath": "/httpbin",
       "backend": "httpbin.org"
     }
-]
-  
+  ]
+}
