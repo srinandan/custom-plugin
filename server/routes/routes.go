@@ -20,14 +20,14 @@ import (
 )
 
 type routerule struct {
-  Name     string `json:"name,omitempty"`
-  Backend  string `json:"backend,omitempty"`
-  BasePath string `json:"basePath,omitempty"`
+	Name     string `json:"name,omitempty"`
+	Backend  string `json:"backend,omitempty"`
+	BasePath string `json:"basePath,omitempty"`
 }
 
 var routerules = []routerule{}
 var defaultRouterule = routerule{
-	Backend: "httpbin.org",
+	Backend:  "httpbin.org",
 	BasePath: "/",
 }
 
@@ -52,7 +52,7 @@ func ReadRoutesFile() error {
 }
 
 func ListRouteRules() []routerule {
-  return routerules
+	return routerules
 }
 
 func GetDefaultRouteRule() (string, string) {
@@ -60,10 +60,10 @@ func GetDefaultRouteRule() (string, string) {
 }
 
 func GetRouteRule(name string) (string, string) {
-  for _, routerule := range routerules {
+	for _, routerule := range routerules {
 		if routerule.Name == name {
 			return routerule.Backend, routerule.BasePath
 		}
 	}
-  return GetDefaultRouteRule()
+	return GetDefaultRouteRule()
 }

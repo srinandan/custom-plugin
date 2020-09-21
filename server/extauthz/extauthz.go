@@ -41,6 +41,7 @@ func (a *AuthorizationServer) Register(s *grpc.Server) {
 // AuthorizationServer server
 type AuthorizationServer struct{}
 
+// header used for routing
 const routeHeader = "x-backend-name"
 
 func (a *AuthorizationServer) Check(ctx context.Context, req *auth.CheckRequest) (*auth.CheckResponse, error) {
@@ -83,7 +84,7 @@ func (a *AuthorizationServer) Check(ctx context.Context, req *auth.CheckRequest)
 	return checkResponse(backend, basePath), nil
 }
 
-func checkDenyResponse() (*auth.CheckResponse) {
+func checkDenyResponse() *auth.CheckResponse {
 	return &auth.CheckResponse{
 		Status: &rpcstatus.Status{
 			Code: int32(rpc.PERMISSION_DENIED),
@@ -91,7 +92,7 @@ func checkDenyResponse() (*auth.CheckResponse) {
 	}
 }
 
-func checkResponse(backend string, basePath string) (*auth.CheckResponse) {
+func checkResponse(backend string, basePath string) *auth.CheckResponse {
 	log.Println("Selecting route ", backend)
 	log.Println(">>> Authorization CheckResponse_OkResponse")
 
@@ -133,7 +134,7 @@ func setHeader(name string, value string, append bool) *corev2.HeaderValueOption
 	}
 }
 
-func checkAllowList() (*regexp.Regexp, error){
+func checkAllowList() (*regexp.Regexp, error) {
 	//this is only one at the moment
 	return regexp.Compile(`/route(/[^/]+)*/?`)
 }

@@ -23,11 +23,11 @@ import (
 	"time"
 
 	extauthz "github.com/srinandan/custom-plugin/server/extauthz"
+	"github.com/srinandan/custom-plugin/server/routes"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
 	"google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/keepalive"
-	"github.com/srinandan/custom-plugin/server/routes"
 )
 
 func getGRPCPort() string {
@@ -35,7 +35,7 @@ func getGRPCPort() string {
 	if port == "" {
 		return ":5000"
 	}
-	return port
+	return ":" + port
 }
 
 func main() {

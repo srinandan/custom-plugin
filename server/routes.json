@@ -1,0 +1,23 @@
+[
+    {
+      "name": "mocktarget",
+      "basePath": "/iloveapis",
+      "backend": "mocktarget.apigee.net"
+    },
+    {
+      "name": "postman",
+      "basePath": "/postman",
+      "backend": "postman-echo.com"
+    },
+    {
+      "name": "httpbin",
+      "basePath": "/httpbin",
+      "backend": "httpbin.org"
+    },
+    {
+      "name": "default",
+      "basePath": "/httpbin",
+      "backend": "httpbin.org"
+    }
+]
+  
