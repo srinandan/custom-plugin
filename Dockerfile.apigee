@@ -1,0 +1,55 @@
+# Copyright 2020 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+FROM google/apigee-envoy-adapter:v1.1.0 as apigee
+
+FROM golang:1.14 as builder
+
+WORKDIR /go/src/custom-plugin
+
+COPY ./server .
+
+ENV GO111MODULE=on
+RUN go mod download
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -a -ldflags '-s -w -extldflags "-static"' -o /go/bin/custom-plugin
+
+FROM envoyproxy/envoy-alpine:v1.15.0
+
+# custom plugin
+COPY --from=builder /go/bin/custom-plugin .
+COPY ./server/routes.json routes.json
+RUN chmod 777 routes.json
+
+# apigee remote service
+COPY --from=apigee /apigee-remote-service-envoy .
+COPY ./apigee/config/config.yaml .
+COPY ./apigee/policy-secret /policy-secret
+COPY ./apigee/certs/tls.* ./apigee/certs/ca.* ./
+
+# envoy config
+COPY envoy-apigee.yaml /etc/envoy/envoy.yaml
+RUN chmod 777 /etc/envoy/envoy.yaml
+
+# startup scripts
+COPY startup-apigee.sh startup-apigee.sh
+RUN chmod +x startup-apigee.sh && chmod 777 startup-apigee.sh
+
+RUN apk add --update \
+    curl \
+    && rm -rf /var/cache/apk/*
+
+EXPOSE 8000
+EXPOSE 8080
+
+CMD ["./startup-apigee.sh"]
