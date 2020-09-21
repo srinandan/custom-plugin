@@ -31,7 +31,7 @@ RUN upx --best --lzma -o /custom-plugin /custom-plugin.org
 ## setup final image
 FROM envoyproxy/envoy-alpine:v1.15.0
 
-COPY --from=upx /go/bin/custom-plugin .
+COPY --from=upx /custom-plugin .
 
 COPY envoy.yaml /etc/envoy/envoy.yaml
 RUN chmod 777 /etc/envoy/envoy.yaml
