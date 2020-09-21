@@ -73,10 +73,12 @@ func (a *AuthorizationServer) Check(ctx context.Context, req *auth.CheckRequest)
 			log.Println("Payload >> ", req.Attributes.Request.Http.Body)
 		}
 
-		if enableExtAuthz(req.Attributes.Request.Http.Path) {
-			return checkResponse(backend, basePath), nil
-		} else {
-			return checkDenyResponse(), nil
+		if routes.IsAllowPathsEnabled() {
+			if enableExtAuthz(req.Attributes.Request.Http.Path) {
+				return checkResponse(backend, basePath), nil
+			} else {
+				return checkDenyResponse(), nil
+			}
 		}
 	}
 	//skip filter

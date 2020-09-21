@@ -25,8 +25,13 @@ type routerule struct {
 	BasePath string `json:"basePath,omitempty"`
 }
 
+type allowlist struct {
+	Enable       bool     `json:"enable,omitempty"`
+	AllowedPaths []string `json:"allowedPaths,omitempty"`
+}
+
 type routeinfo struct {
-	AllowList   []string    `json:"allowList,omitempty"`
+	AllowList   allowlist   `json:"allowList,omitempty"`
 	RouteHeader string      `json:"routeHeader,omitempty"`
 	RouteRules  []routerule `json:"routerules,omitempty"`
 }
@@ -67,11 +72,15 @@ func ListRouteRules() []routerule {
 	return routeInfo.RouteRules
 }
 
+func IsAllowPathsEnabled() bool {
+	return routeInfo.AllowList.Enable
+}
+
 func ListAllowedPaths() []string {
-	if len(routeInfo.AllowList) == 0 {
+	if len(routeInfo.AllowList.AllowedPaths) == 0 {
 		return defaultAllowList
 	}
-	return routeInfo.AllowList
+	return routeInfo.AllowList.AllowedPaths
 }
 
 func GetDefaultRouteRule() (string, string) {

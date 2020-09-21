@@ -1,5 +1,8 @@
 {
-  "allowList": ["/route"],
+  "allowList": {
+    "enable": true,
+    "allowedPaths": ["/route"]
+  },
   "routeHeader": "x-backend-name",
   "routerules" : [
     {
