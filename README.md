@@ -100,7 +100,7 @@ Step 2: Build the docker image
 
 Step 3: Test the endpoints
 
-Make sure you setup an API Product for `/route`, get credentials (deeloper app) and then try the endpoints.
+Make sure you setup an API Product for `/route`, get credentials (developer app) and then try the endpoints.
 
 ### Cleanup
 
