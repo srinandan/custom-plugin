@@ -34,8 +34,6 @@ COPY --from=apigee /apigee-remote-service-envoy /apigee-remote-service-envoy.org
 # Compress the binary and copy it to final image
 RUN upx --best --lzma -o /apigee-remote-service-envoy /apigee-remote-service-envoy.org
 
-
-
 ## setup final image
 FROM envoyproxy/envoy-alpine:v1.15.0
 
@@ -58,9 +56,9 @@ RUN chmod 777 /etc/envoy/envoy.yaml
 COPY startup-apigee.sh startup-apigee.sh
 RUN chmod +x startup-apigee.sh && chmod 777 startup-apigee.sh
 
-RUN apk add --update \
-    curl \
-    && rm -rf /var/cache/apk/*
+#RUN apk add --update \
+#    curl \
+#    && rm -rf /var/cache/apk/*
 
 EXPOSE 8000
 EXPOSE 8080
