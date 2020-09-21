@@ -2,6 +2,20 @@
 
 This sample implements Envoy's [external authorization](https://www.envoyproxy.io/docs/envoy/latest/api-v2/config/filter/http/ext_authz/v2/ext_authz.proto) filter to demonstrate simple routing of requests to upstream targets
 
+## Scenario
+
+In this example, a client sends requests to an endpoints serviced by Envoy. The consumer passes a header (`x-backend-name`) with the name the name of the backend. Envoy calls the ext_authz service and dynamically routes the consumer to the appropriate backend.
+
+![Routing Sample](./envoy-routing.png)
+
+## Configuration
+
+Routing configuration is managed by `routes.json` file. The file has three parts to it:
+
+* `allowList`: The paths allowed for access by the consumer. The other paths are rejected by the ext_authz service. There is a flag to enable/disable this.
+* `routeHeader`: The name of the header the consumer uses to select a route. The default header is `x-backend-name`. One can easily modify this to look for a claim in the JWT token.
+* `routerules`: A list of rules that map a name to basePath and hostname. This routes are not directly accessible by the consumer.
+
 ## Testing via docker
 
 Step 1: Build the docker image
@@ -28,7 +42,7 @@ envoy -c envoy.yaml
 
 ## Test endpoint(s)
 
-Pass no backend header to send to [https://httpbin.org](https://httpbin.org)
+Pass no backend header. The default will send the request to [https://httpbin.org](https://httpbin.org)
 
 ```bash
 curl localhost:8080/route -v
