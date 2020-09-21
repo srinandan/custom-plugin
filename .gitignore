@@ -14,10 +14,10 @@ envoy
 *.out
 
 # test files
-*.json
 *.zip
 
 # Dependency directories (remove the comment below to include it)
+apigee/
 vendor/
 # binaries
 dist/
