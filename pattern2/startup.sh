@@ -17,10 +17,7 @@
 set -e
 
 # Start the ext_authz service
-GRPC_PORT=4000 ./custom-plugin &
-
-# Start apigee remote-service
-./apigee-remote-service-envoy &
+./envoy-extension &
 
 # Start envoyproxy
 ./usr/local/bin/envoy -c /etc/envoy/envoy.yaml #--component-log-level filter:trace,ext_authz:trace

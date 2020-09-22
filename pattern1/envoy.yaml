@@ -89,7 +89,7 @@ static_resources:
               clear_route_cache: true
               grpc_service:
                 envoy_grpc:
-                  cluster_name: custom-plugin
+                  cluster_name: extension-service
                 timeout: 1s
 
           - name: envoy.filters.http.router
@@ -176,12 +176,12 @@ static_resources:
         "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
         sni: httpbin.org
 
-  - name: custom-plugin
+  - name: extension-service
     type: static
     http2_protocol_options: {}
     connect_timeout: 0.25s
     load_assignment:
-      cluster_name: custom-plugin
+      cluster_name: extension-service
       endpoints:
       - lb_endpoints:
         - endpoint:

@@ -1,4 +1,4 @@
-module github.com/srinandan/custom-plugin/client
+module github.com/srinandan/envoy-extensions/pattern1/client
 
 go 1.14
 

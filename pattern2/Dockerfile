@@ -14,33 +14,30 @@
 
 FROM golang:1.14 as builder
 
-WORKDIR /go/src/custom-plugin
+WORKDIR /go/src/envoy-extension
 
-COPY ./server .
+COPY main.go go.mod /go/src/envoy-extension/
 
 ENV GO111MODULE=on
 RUN go mod download
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -a -ldflags '-s -w -extldflags "-static"' -o /go/bin/custom-plugin
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -a -ldflags '-s -w -extldflags "-static"' -o /go/bin/envoy-extension
 
 ## compress the binaries
 FROM gruebel/upx:latest as upx
-COPY --from=builder /go/bin/custom-plugin /custom-plugin.org
+COPY --from=builder /go/bin/envoy-extension /envoy-extension.org
 # Compress the binary and copy it to final image
-RUN upx --best --lzma -o /custom-plugin /custom-plugin.org
+RUN upx --best --lzma -o /envoy-extension /envoy-extension.org
 
 ## setup final image
 FROM envoyproxy/envoy-alpine:v1.15.0
 
-COPY --from=upx /custom-plugin .
+COPY --from=upx /envoy-extension .
 
 COPY envoy.yaml /etc/envoy/envoy.yaml
 RUN chmod 777 /etc/envoy/envoy.yaml
 
 COPY startup.sh startup.sh
 RUN chmod +x startup.sh && chmod 777 startup.sh
-
-COPY ./server/routes.json routes.json
-RUN chmod 777 routes.json
 
 #RUN apk add --update \
 #    curl \

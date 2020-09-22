@@ -1,3 +1,4 @@
+#!/bin/bash
 # Copyright 2020 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,9 +14,5 @@
 # limitations under the License.
 
 
-#!/bin/bash
-
-docker stop custom-plugin-apigee
-
-docker rmi -f $(docker images | grep custom-plugin-apigee | awk '{print $3}')
-docker rmi -f $(docker images -f "dangling=true" | awk '{print $3}')
+docker build -t envoy-extension .
+docker run --name envoy-extension --rm -d -p 8000:8000 -p 8080:8080 envoy-extension

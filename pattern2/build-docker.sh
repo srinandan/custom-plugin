@@ -14,5 +14,5 @@
 # limitations under the License.
 
 
-docker build -t custom-plugin .
-docker run --name custom-plugin --rm -d -p 8000:8000 -p 8080:8080 custom-plugin
+docker build -t envoy-extension .
+docker run --name envoy-extension --rm -d -p 8000:8000 -p 8080:8080 envoy-extension

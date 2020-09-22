@@ -17,7 +17,7 @@ envoy
 *.zip
 
 # Dependency directories (remove the comment below to include it)
-apigee/
+pattern1/apigee/
 vendor/
 # binaries
 dist/

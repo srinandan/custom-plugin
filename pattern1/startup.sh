@@ -17,7 +17,7 @@
 set -e
 
 # Start the ext_authz service
-./custom-plugin &
+./envoy-extension &
 
 # Start envoyproxy
 ./usr/local/bin/envoy -c /etc/envoy/envoy.yaml #--component-log-level filter:trace,ext_authz:trace
