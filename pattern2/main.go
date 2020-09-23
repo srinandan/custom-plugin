@@ -15,14 +15,19 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"os"
+	"os/signal"
+	"strings"
+	"time"
 
 	"net/http"
 )
 
-const port = "0.0.0.0:7080"
+const address = "0.0.0.0:7080"
 
 //ErrorMessage hold the return value when there is an error
 type ErrorMessage struct {
@@ -32,24 +37,61 @@ type ErrorMessage struct {
 
 var errorMessage = ErrorMessage{StatusCode: http.StatusInternalServerError}
 
+type HttpHandler struct{}
+
 func main() {
 
-	fmt.Println("Starting server - ", port)
+	var wait time.Duration
 
-	http.ListenAndServe(port, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ProcessRequest(w, r)
-	}))
+	fmt.Println("Starting server - ", address)
 
+	handler := HttpHandler{}
+
+	//the following code is from gorilla mux samples
+	srv := &http.Server{
+		Addr:         address,
+		WriteTimeout: time.Second * 15,
+		ReadTimeout:  time.Second * 15,
+		IdleTimeout:  time.Second * 60,
+		Handler:      handler,
+	}
+
+	go func() {
+		if err := srv.ListenAndServe(); err != nil {
+			fmt.Println(err)
+		}
+	}()
+
+	c := make(chan os.Signal, 1)
+	// We'll accept graceful shutdowns when quit via SIGINT (Ctrl+C)
+	// SIGKILL, SIGQUIT or SIGTERM (Ctrl+/) will not be caught.
+	signal.Notify(c, os.Interrupt)
+
+	// Block until we receive our signal.
+	<-c
+
+	// Create a deadline to wait for.
+	ctx, cancel := context.WithTimeout(context.Background(), wait)
+	defer cancel()
+	// Doesn't block if no connections, but will otherwise wait
+	// until the timeout deadline.
+	_ = srv.Shutdown(ctx)
+
+	fmt.Println("Shutting down")
+
+	os.Exit(0)
 }
 
-func ProcessRequest(w http.ResponseWriter, r *http.Request) {
+func (h HttpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var req *http.Request
-	downstreamURL := "http://127.0.0.1:9080" + r.URL.Path
+	downstreamURL := "https://httpbin.org/" + r.URL.Path //"http://127.0.0.1:9080" + r.URL.Path
 	client := &http.Client{}
 
 	fmt.Println(">> Request received")
 
-	req, err := http.NewRequest("GET", downstreamURL, nil)
+	//TODO: add request logic here.
+
+	req, err := http.NewRequest(r.Method, downstreamURL, nil)
 	if err != nil {
 		ErrorHandler(w, err)
 		return
@@ -70,14 +112,11 @@ func ProcessRequest(w http.ResponseWriter, r *http.Request) {
 		ErrorHandler(w, err)
 		return
 	}
-	fmt.Println("%s", string(respBody))
+
+	//TODO: add response logic here.
+
 	fmt.Println(">> Response sent")
-
-	var jsonMap map[string]string
-	_ = json.Unmarshal(respBody, &jsonMap)
-
-	ResponseHandler(w, jsonMap, false)
-
+	ResponseHandler(w, resp.Header, resp.StatusCode, respBody)
 }
 
 func ErrorHandler(w http.ResponseWriter, err error) {
@@ -92,18 +131,14 @@ func ErrorHandler(w http.ResponseWriter, err error) {
 }
 
 //ResponseHandler returns a 200 when the response is successful
-func ResponseHandler(w http.ResponseWriter, response interface{}, text bool) {
-	if !text {
-		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-		w.WriteHeader(http.StatusOK)
+func ResponseHandler(w http.ResponseWriter, headers http.Header, statusCode int, response []byte) {
 
-		if err := json.NewEncoder(w).Encode(response); err != nil {
-			fmt.Println(err)
-		}
-	} else {
-		w.Header().Set("Content-Type", "text/plain; charset=UTF-8")
-		if str, ok := response.(string); ok {
-			w.Write([]byte(str))
-		}
+	for headerName, headerValue := range headers {
+		w.Header().Set(headerName, strings.Join(headerValue, ","))
+	}
+	w.WriteHeader(statusCode)
+	_, err := w.Write(response)
+	if err != nil {
+		fmt.Println(err)
 	}
 }
